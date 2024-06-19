@@ -82,7 +82,7 @@ func (pc *PlayerController) UpdateInput() {
 	pc.Truncate()
 }
 
-func (pc *PlayerController) UpdatePlayerPosition() {
+func (pc *PlayerController) UpdatePlayerPosition(game *Game) {
 	if pc.Horizontal == 0 && pc.Vertical == 0 {
 		return
 	}
@@ -95,6 +95,29 @@ func (pc *PlayerController) UpdatePlayerPosition() {
 	dir := math.Atan2(float64(yDiff), float64(xDiff)) * 180 / math.Pi
 	xDist := math.Cos(dir*math.Pi/180) * float64(pc.Speed)
 	yDist := math.Sin(dir*math.Pi/180) * float64(pc.Speed)
-	pc.Player.X = x1 + float32(xDist)
-	pc.Player.Y = y1 + float32(yDist)
+	locX := x1 + float32(xDist)
+	locY := y1 + float32(yDist)
+	if InsideWall(locX, locY, game) {
+		if !InsideWall(locX, float32(y1), game) {
+			pc.Player.X = locX
+			return
+		}
+		if !InsideWall(float32(x1), locY, game) {
+			pc.Player.Y = locY
+			return
+		}
+		return
+	}
+	pc.Player.X = locX
+	pc.Player.Y = locY
+}
+
+func InsideWall(x, y float32, game *Game) bool {
+	xIndex := int(float64(x) - math.Mod(float64(x), 1))
+	yIndex := int(float64(y) - math.Mod(float64(y), 1))
+	if xIndex < 0 || xIndex >= game.ActiveLevel.width || yIndex < 0 || yIndex >= game.ActiveLevel.height {
+		return true
+	}
+	tileType := game.ActiveLevel.Map[xIndex][yIndex]
+	return tileType == TILE_WALL
 }
