@@ -21,7 +21,7 @@ func main() {
 	if testLevelErr != nil {
 		log.Println("[TEST LEVEL ERROR]", testLevelErr)
 	}
-	testLevel.Render(game.TileDrawSize)
+	testLevel.Render(&game)
 	game.ActiveLevel = testLevel
 	if settingsErr != nil {
 		log.Println("[SaveFile]", settingsErr)

@@ -2,7 +2,7 @@ package gameplay
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
 	g.SetTileSize(outsideWidth, outsideHeight)
-	g.ActiveLevel.Render(g.TileDrawSize)
+	g.ActiveLevel.Render(g)
 	return g.ScreenWidth, g.ScreenHeight
 }
 

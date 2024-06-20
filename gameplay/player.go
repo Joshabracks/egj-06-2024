@@ -12,8 +12,8 @@ import (
 
 type Player struct {
 	Item uint8
-	Stamina float64
-	Boost float64
+	Boost bool
+	Stamina float32
 	Image *ebiten.Image
 	Object
 }
@@ -46,8 +46,8 @@ func NewPlayerController(g *Game) PlayerController {
 			Y:     1.5,
 			Speed: 0.1,
 		},
+		Boost:   false,
 		Stamina: 100,
-		Boost:   0,
 	}
 	player.Layout(g)
 	return PlayerController{
@@ -103,10 +103,22 @@ func (pc *PlayerController) UpdateInput() {
 	if pc.IsKeyPressed("right") {
 		pc.Horizontal++
 	}
+	if pc.IsKeyPressed("boost") {
+		pc.Boost = true
+	} else {
+		pc.Boost = false
+	}
 	pc.Truncate()
 }
 
 func (pc *PlayerController) UpdatePlayerPosition(game *Game) {
+	speed := pc.Speed
+	if pc.Boost && pc.Stamina > 0 {
+		speed *= 2
+		pc.Stamina -= 0.5
+	} else if !pc.Boost && pc.Stamina < 100 {
+		pc.Stamina += 0.05
+	}
 	if pc.Horizontal == 0 && pc.Vertical == 0 {
 		return
 	}
@@ -117,8 +129,8 @@ func (pc *PlayerController) UpdatePlayerPosition(game *Game) {
 	xDiff := x2 - x1
 	yDiff := y2 - y1
 	pc.Direction = math.Atan2(float64(yDiff), float64(xDiff)) * 180 / math.Pi
-	xDist := math.Cos(pc.Direction*math.Pi/180) * float64(pc.Speed)
-	yDist := math.Sin(pc.Direction*math.Pi/180) * float64(pc.Speed)
+	xDist := math.Cos(pc.Direction*math.Pi/180) * float64(speed)
+	yDist := math.Sin(pc.Direction*math.Pi/180) * float64(speed)
 	locX := x1 + xDist
 	locY := y1 + yDist
 	if InsideWall(locX, locY, game) {

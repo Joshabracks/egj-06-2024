@@ -79,12 +79,20 @@ func (l *Level) Load() error {
 	return nil
 }
 
-func (l *Level) Render(tileSize int) {
-	l.MapImage = ebiten.NewImage(l.width * tileSize, l.height * tileSize)
+func (l *Level) Render(g *Game) {
+	l.MapImage = ebiten.NewImage(l.width * g.TileDrawSize, l.height * g.TileDrawSize)
 	for x := 0; x < l.width; x++ {
 		for y := 0; y < l.height; y++ {
 			tileType := l.Map[x][y]
-			vector.DrawFilledRect(l.MapImage, float32(x * tileSize), float32(y * tileSize), float32(tileSize), float32(tileSize), TILE_COLOR_MAP[tileType], false)
+			vector.DrawFilledRect(l.MapImage, float32(x * g.TileDrawSize), float32(y * g.TileDrawSize), float32(g.TileDrawSize), float32(g.TileDrawSize), TILE_COLOR_MAP[tileType], false)
 		}
 	}
+}
+
+func (l *Level) RenderOverlay(g *Game, screen *ebiten.Image) {
+	stamina := g.Player.Stamina
+	if stamina > 0 {
+		stamina = stamina / 100
+	}
+	vector.DrawFilledRect(screen, float32(g.TileDrawSize), float32(g.TileDrawSize / 4), float32(g.TileDrawSize * 8) * stamina, float32(g.TileDrawSize / 2), color.White, false)
 }
