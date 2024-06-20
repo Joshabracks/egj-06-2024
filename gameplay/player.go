@@ -11,37 +11,57 @@ import (
 )
 
 type Player struct {
-	X, Y,
-	Speed float32
 	Item uint8
+	Boost bool
+	Stamina float32
+	Image *ebiten.Image
+	Object
 }
 
-func (p *Player) Draw(g *Game, screen *ebiten.Image) {
-	x := p.X * float32(g.TileDrawSize)
-	y := p.Y * float32(g.TileDrawSize)
-	vector.DrawFilledCircle(screen, x, y, float32(g.TileDrawSize / 3), color.Black, true)
-	vector.DrawFilledCircle(screen, x, y, float32(g.TileDrawSize / 4), color.RGBA{R: 255, G: 255, B: 0, A: 255}, true)
+func (p *Player) Render(g *Game) {
+	midpoint := float32(g.TileDrawSize) / 2
+	x := midpoint
+	y := midpoint
+	p.Image.Clear()
+	vector.DrawFilledCircle(p.Image, x, y, float32(g.TileDrawSize / 3), color.Black, true)
+	vector.DrawFilledCircle(p.Image, x, y, float32(g.TileDrawSize / 4), color.RGBA{R: 255, G: 255, B: 0, A: 255}, true)
+}
+
+func (p *Player) Layout(g *Game) {
+	p.Image = ebiten.NewImage(g.TileDrawSize, g.TileDrawSize)
 }
 
 type PlayerController struct {
-	Vertical, Horizontal, Scroll float32
+	Vertical, Horizontal, Scroll float64
 	Player
-	Left  []ebiten.Key
-	Right []ebiten.Key
-	Up    []ebiten.Key
-	Down  []ebiten.Key
+	KeyBindings KeyBindingMap
 }
 
-func NewPlayerController(p Player) PlayerController {
+type KeyBindingMap map[string][]ebiten.Key
+
+func NewPlayerController(g *Game) PlayerController {
+	player := Player{
+		Object: Object{
+			X:     1.5,
+			Y:     1.5,
+			Speed: 0.1,
+		},
+		Boost:   false,
+		Stamina: 100,
+	}
+	player.Layout(g)
 	return PlayerController{
 		Vertical: 0,
 		Horizontal: 0,
 		Scroll: 0,
-		Player: p,
-		Left: []ebiten.Key{ebiten.KeyLeft, ebiten.KeyA},
-		Right: []ebiten.Key{ebiten.KeyRight, ebiten.KeyD},
-		Up: []ebiten.Key{ebiten.KeyUp, ebiten.KeyW},
-		Down: []ebiten.Key{ebiten.KeyDown, ebiten.KeyS},
+		Player: player,
+		KeyBindings: KeyBindingMap{
+			"left": []ebiten.Key{ebiten.KeyLeft, ebiten.KeyA},
+			"right": []ebiten.Key{ebiten.KeyRight, ebiten.KeyD},
+			"up": []ebiten.Key{ebiten.KeyUp, ebiten.KeyW},
+			"down": []ebiten.Key{ebiten.KeyDown, ebiten.KeyS},
+			"boost": []ebiten.Key{ebiten.KeySpace, ebiten.KeyEnter},
+		},
 	}
 }
 
@@ -56,9 +76,13 @@ func (pc *PlayerController) Reset() {
 	pc.Scroll = 0
 }
 
-func IsKeyPressed(keys []ebiten.Key) bool {
-	for _, key := range(keys) {
-		if ebiten.IsKeyPressed(key) {
+func (pc *PlayerController) IsKeyPressed(key string) bool {
+	bindings, ok := pc.KeyBindings[key]
+	if !ok {
+		return false
+	}
+	for _, binding := range(bindings) {
+		if ebiten.IsKeyPressed(binding) {
 			return true
 		}
 	}
@@ -67,22 +91,34 @@ func IsKeyPressed(keys []ebiten.Key) bool {
 
 func (pc *PlayerController) UpdateInput() {
 	pc.Reset()
-	if IsKeyPressed(pc.Up) {
+	if pc.IsKeyPressed("up") {
 		pc.Vertical--
 	}
-	if IsKeyPressed(pc.Down) {
+	if pc.IsKeyPressed("down") {
 		pc.Vertical++
 	}
-	if IsKeyPressed(pc.Left) {
+	if pc.IsKeyPressed("left") {
 		pc.Horizontal--
 	}
-	if IsKeyPressed(pc.Right) {
+	if pc.IsKeyPressed("right") {
 		pc.Horizontal++
+	}
+	if pc.IsKeyPressed("boost") {
+		pc.Boost = true
+	} else {
+		pc.Boost = false
 	}
 	pc.Truncate()
 }
 
-func (pc *PlayerController) UpdatePlayerPosition() {
+func (pc *PlayerController) UpdatePlayerPosition(game *Game) {
+	speed := pc.Speed
+	if pc.Boost && pc.Stamina > 0 {
+		speed *= 2
+		pc.Stamina -= 0.5
+	} else if !pc.Boost && pc.Stamina < 100 {
+		pc.Stamina += 0.05
+	}
 	if pc.Horizontal == 0 && pc.Vertical == 0 {
 		return
 	}
@@ -92,9 +128,32 @@ func (pc *PlayerController) UpdatePlayerPosition() {
 	y2 := y1 + pc.Vertical
 	xDiff := x2 - x1
 	yDiff := y2 - y1
-	dir := math.Atan2(float64(yDiff), float64(xDiff)) * 180 / math.Pi
-	xDist := math.Cos(dir*math.Pi/180) * float64(pc.Speed)
-	yDist := math.Sin(dir*math.Pi/180) * float64(pc.Speed)
-	pc.Player.X = x1 + float32(xDist)
-	pc.Player.Y = y1 + float32(yDist)
+	pc.Direction = math.Atan2(float64(yDiff), float64(xDiff)) * 180 / math.Pi
+	xDist := math.Cos(pc.Direction*math.Pi/180) * float64(speed)
+	yDist := math.Sin(pc.Direction*math.Pi/180) * float64(speed)
+	locX := x1 + xDist
+	locY := y1 + yDist
+	if InsideWall(locX, locY, game) {
+		if !InsideWall(locX, y1, game) {
+			pc.Player.X = locX
+			return
+		}
+		if !InsideWall(x1, locY, game) {
+			pc.Player.Y = locY
+			return
+		}
+		return
+	}
+	pc.Player.X = locX
+	pc.Player.Y = locY
+}
+
+func InsideWall(x, y float64, game *Game) bool {
+	xIndex := int(x - math.Mod(float64(x), 1))
+	yIndex := int(y - math.Mod(float64(y), 1))
+	if xIndex < 0 || xIndex >= game.ActiveLevel.width || yIndex < 0 || yIndex >= game.ActiveLevel.height {
+		return true
+	}
+	tileType := game.ActiveLevel.Map[xIndex][yIndex]
+	return tileType == TILE_WALL
 }

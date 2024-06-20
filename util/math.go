@@ -1,6 +1,6 @@
 package util
 
-func Clamp(f, min, max float32) float32 {
+func Clamp(f, min, max float64) float64 {
 	if f > max {
 		f = max
 	}

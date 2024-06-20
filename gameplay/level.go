@@ -35,6 +35,8 @@ var TILE_COLOR_MAP = map[uint8]color.Color {
 type Level struct {
 	Filepath string
 	Map [][]uint8
+	BodyCoordinates [2]int
+	SpawnerCoordinates [][2]int
 	MapImage *ebiten.Image
 	width, height int
 }
@@ -49,10 +51,11 @@ func (l *Level) Load() error {
 	if err != nil {
 		return err
 	}
+	hasBody := false
 	bounds := image.Bounds()
 	l.width = bounds.Max.X
 	l.height = bounds.Max.Y
-
+	l.SpawnerCoordinates = make([][2]int, 0)
 	l.Map = make([][]uint8, l.width)
 	for x := 0; x < l.width; x++ {
 		l.Map[x] = make([]uint8, l.height)
@@ -60,8 +63,15 @@ func (l *Level) Load() error {
 			pixel := image.At(x, y)
 			r, g, b, a := pixel.RGBA()
 			tileType, ok := TILE_MAP[[4]uint32{r,g,b,a}]
-			if !ok {
+			if !ok || (tileType == TILE_BODY && hasBody) {
 				tileType = TILE_EMPTY
+			}
+			if tileType == TILE_BODY && !hasBody {
+				l.BodyCoordinates = [2]int{x, y}
+				hasBody = true
+			}
+			if tileType == TILE_SPAWN {
+				l.SpawnerCoordinates = append(l.SpawnerCoordinates, [2]int{x,y})
 			}
 			l.Map[x][y] = tileType
 		}
@@ -69,12 +79,20 @@ func (l *Level) Load() error {
 	return nil
 }
 
-func (l *Level) Render(tileSize int) {
-	l.MapImage = ebiten.NewImage(l.width * tileSize, l.height * tileSize)
+func (l *Level) Render(g *Game) {
+	l.MapImage = ebiten.NewImage(l.width * g.TileDrawSize, l.height * g.TileDrawSize)
 	for x := 0; x < l.width; x++ {
 		for y := 0; y < l.height; y++ {
 			tileType := l.Map[x][y]
-			vector.DrawFilledRect(l.MapImage, float32(x * tileSize), float32(y * tileSize), float32(tileSize), float32(tileSize), TILE_COLOR_MAP[tileType], false)
+			vector.DrawFilledRect(l.MapImage, float32(x * g.TileDrawSize), float32(y * g.TileDrawSize), float32(g.TileDrawSize), float32(g.TileDrawSize), TILE_COLOR_MAP[tileType], false)
 		}
 	}
+}
+
+func (l *Level) RenderOverlay(g *Game, screen *ebiten.Image) {
+	stamina := g.Player.Stamina
+	if stamina > 0 {
+		stamina = stamina / 100
+	}
+	vector.DrawFilledRect(screen, float32(g.TileDrawSize), float32(g.TileDrawSize / 4), float32(g.TileDrawSize * 8) * stamina, float32(g.TileDrawSize / 2), color.White, false)
 }

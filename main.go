@@ -8,11 +8,11 @@ import (
 
 func main() {
 	game := gameplay.Game{}
+	w, h := ebiten.WindowSize()
+	game.SetTileSize(w, h)
 	game.Init()
 	game.SaveSettings()
 	settingsErr := game.SaveSettings()
-	w, h := ebiten.WindowSize()
-	game.SetTileSize(w, h)
 	testLevel := gameplay.Level{
 		Filepath: "asset/level/map_01.png",
 	}
@@ -21,7 +21,7 @@ func main() {
 	if testLevelErr != nil {
 		log.Println("[TEST LEVEL ERROR]", testLevelErr)
 	}
-	testLevel.Render(game.TileDrawSize)
+	testLevel.Render(&game)
 	game.ActiveLevel = testLevel
 	if settingsErr != nil {
 		log.Println("[SaveFile]", settingsErr)
