@@ -79,6 +79,33 @@ func (l *Level) Load() error {
 	return nil
 }
 
+func (b *BodyPart) SetActive(g *Game) bool {
+	if !b.Active {
+		b.Activate(g)
+	}
+	return b.Assembled
+}
+
+func (l *Level) SetActiveBodyPart(g *Game) {
+	if !l.Head.SetActive(g) {
+		return
+	}
+	if !l.Torso.SetActive(g) {
+		return
+	}
+	if !l.ArmLeft.SetActive(g) {
+		return
+	}
+	if !l.ArmRight.SetActive(g) {
+		return
+	}
+	if !l.LegLeft.SetActive(g) {
+		return
+	}
+	l.LegRight.SetActive(g)
+
+}
+
 func (l *Level) LoadParts(g *Game) {
 	l.Head = NewBodyPart(HEAD, GREY_BOI, g)
 	l.Torso = NewBodyPart(TORSO, GREY_BOI, g)

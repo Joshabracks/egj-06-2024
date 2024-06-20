@@ -3,6 +3,7 @@ package gameplay
 import (
 	"game/util"
 	"image"
+	"math/rand"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -84,6 +85,14 @@ type BodyPart struct {
 	Image     *ebiten.Image
 }
 
+func (b *BodyPart) Activate(g *Game) {
+	b.Active = true
+	r := rand.Intn(len(g.ActiveLevel.SpawnerCoordinates))
+	coords := g.ActiveLevel.SpawnerCoordinates[r]
+	b.X = float64(coords[0]) + 0.25
+	b.Y = float64(coords[1]) + 0.25
+}	
+
 func (b *BodyPart) Draw(g *Game, screen *ebiten.Image) {
 	if !b.Active && !b.Assembled {
 		b.DrawIcon(g, screen)
@@ -93,6 +102,17 @@ func (b *BodyPart) Draw(g *Game, screen *ebiten.Image) {
 		b.DrawAssembled(g, screen)
 		return
 	}
+	if b.Active {
+		b.DrawActive(g, screen)
+	}
+}
+
+func (b *BodyPart) DrawActive(g *Game, screen *ebiten.Image) {
+	xOffset := b.X * float64(g.TileSize)
+	yOffset := b.Y * float64(g.TileSize)
+	op := ebiten.DrawImageOptions{}
+	op.GeoM.Translate(float64(xOffset), float64(yOffset))
+	screen.DrawImage(b.Image, &op)
 }
 
 func (b *BodyPart) DrawAssembled(g *Game, screen *ebiten.Image) {
