@@ -19,16 +19,16 @@ type Player struct {
 }
 
 func (p *Player) Render(g *Game) {
-	midpoint := float32(g.TileDrawSize) / 2
+	midpoint := float32(g.TileSize) / 2
 	x := midpoint
 	y := midpoint
 	p.Image.Clear()
-	vector.DrawFilledCircle(p.Image, x, y, float32(g.TileDrawSize / 3), color.Black, true)
-	vector.DrawFilledCircle(p.Image, x, y, float32(g.TileDrawSize / 4), color.RGBA{R: 255, G: 255, B: 0, A: 255}, true)
+	vector.DrawFilledCircle(p.Image, x, y, float32(g.TileSize / 3), color.Black, true)
+	vector.DrawFilledCircle(p.Image, x, y, float32(g.TileSize / 4), color.RGBA{R: 255, G: 255, B: 0, A: 255}, true)
 }
 
 func (p *Player) Layout(g *Game) {
-	p.Image = ebiten.NewImage(g.TileDrawSize, g.TileDrawSize)
+	p.Image = ebiten.NewImage(g.TileSize, g.TileSize)
 }
 
 type PlayerController struct {
@@ -116,8 +116,14 @@ func (pc *PlayerController) UpdatePlayerPosition(game *Game) {
 	if pc.Boost && pc.Stamina > 0 {
 		speed *= 2
 		pc.Stamina -= 0.5
+		if pc.Stamina < 0 {
+			pc.Stamina = 0
+		}
 	} else if !pc.Boost && pc.Stamina < 100 {
 		pc.Stamina += 0.05
+		if pc.Stamina > 100 {
+			pc.Stamina = 100
+		}
 	}
 	if pc.Horizontal == 0 && pc.Vertical == 0 {
 		return

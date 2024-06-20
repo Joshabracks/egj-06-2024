@@ -10,6 +10,7 @@ import (
 type Object struct {
 	X, Y, Speed float64
 	Direction   float64
+	Active      bool
 }
 
 type BodyPartType uint8
@@ -22,6 +23,24 @@ const (
 	LEG_RIGHT
 	LEG_LEFT
 )
+
+var BODY_PART_UV_INDICES = map[BodyPartType][4]int{
+	HEAD:      {1, 0, 2, 2},
+	TORSO:     {1, 2, 2, 2},
+	ARM_LEFT:  {0, 0, 1, 2},
+	ARM_RIGHT: {3, 0, 1, 2},
+	LEG_LEFT:  {0, 2, 1, 2},
+	LEG_RIGHT: {3, 2, 1, 2},
+}
+
+var BODY_PART_TABLE_OFFSETS = map[BodyPartType][2]int{
+	HEAD:      {8, 0},
+	TORSO:     {8, 14},
+	ARM_LEFT:  {0, 14},
+	ARM_RIGHT: {24, 14},
+	LEG_LEFT:  {8, 30},
+	LEG_RIGHT: {16, 30},
+}
 
 type CreatureType uint8
 
@@ -40,37 +59,71 @@ const (
 	STRONK_GURL
 )
 
-var CREATURE_IMAGE_PATH = map[CreatureType]string {
-	GREY_BOI: "asset/image/body/grey-boi.png",
-	GREY_GURL: "asset/image/body/grey-gurl.png",
-	SKINNY_BOI: "asset/image/body/skinny-boi.png",
-	SKINNY_GURL: "asset/image/body/skinny-gurl.png",
-	CHUBBY_BOI: "asset/image/body/chubby-boi.png",
-	CHUBBY_GURL: "asset/image/body/chubby-gurl.png",
-	AVERAGE_BOI: "asset/image/body/average-boi.png",
-	AVERAGE_GURL: "asset/image/body/average-gurl.png",
-	ATHLETIC_BOI: "asset/image/body/athletic-boi.png",
+var CREATURE_IMAGE_PATH = map[CreatureType]string{
+	GREY_BOI:      "asset/image/body/grey-boi.png",
+	GREY_GURL:     "asset/image/body/grey-gurl.png",
+	SKINNY_BOI:    "asset/image/body/skinny-boi.png",
+	SKINNY_GURL:   "asset/image/body/skinny-gurl.png",
+	CHUBBY_BOI:    "asset/image/body/chubby-boi.png",
+	CHUBBY_GURL:   "asset/image/body/chubby-gurl.png",
+	AVERAGE_BOI:   "asset/image/body/average-boi.png",
+	AVERAGE_GURL:  "asset/image/body/average-gurl.png",
+	ATHLETIC_BOI:  "asset/image/body/athletic-boi.png",
 	ATHLETIC_GURL: "asset/image/body/athletic-gurl.png",
-	STRONK_BOI: "asset/image/body/stronk-boi.png",
-	STRONK_GURL: "asset/image/body/stronk-gurl.png",
+	STRONK_BOI:    "asset/image/body/stronk-boi.png",
+	STRONK_GURL:   "asset/image/body/stronk-gurl.png",
 }
 
-var CREATURE_IMAGE = map[CreatureType]*ebiten.Image {}
+var CREATURE_IMAGE = map[CreatureType]*ebiten.Image{}
 
 type BodyPart struct {
 	Object
 	BodyPartType
 	CreatureType
-	Image *ebiten.Image
+	Assembled bool
+	Image     *ebiten.Image
 }
 
-var BODY_PART_UV_INDICES = map[BodyPartType][4]int{
-	HEAD:      {1, 0, 2, 2},
-	TORSO:     {1, 2, 2, 2},
-	ARM_LEFT:  {0, 0, 1, 2},
-	ARM_RIGHT: {3, 0, 1, 2},
-	LEG_LEFT:  {0, 2, 1, 2},
-	LEG_RIGHT: {3, 2, 1, 2},
+func (b *BodyPart) Draw(g *Game, screen *ebiten.Image) {
+	if !b.Active && !b.Assembled {
+		b.DrawIcon(g, screen)
+		return
+	}
+	if b.Assembled {
+		b.DrawAssembled(g, screen)
+		return
+	}
+}
+
+func (b *BodyPart) DrawAssembled(g *Game, screen *ebiten.Image) {
+	xOffset := (g.ActiveLevel.BodyCoordinates[0] * g.TileSize) + (BODY_PART_TABLE_OFFSETS[b.BodyPartType][0])
+	yOffset := (g.ActiveLevel.BodyCoordinates[1] * g.TileSize) + (BODY_PART_TABLE_OFFSETS[b.BodyPartType][1])
+	op := ebiten.DrawImageOptions{}
+	op.GeoM.Translate(float64(xOffset), float64(yOffset))
+	screen.DrawImage(b.Image, &op)
+}
+
+func (b *BodyPart) DrawIcon(g *Game, screen *ebiten.Image) {
+	op := ebiten.DrawImageOptions{}
+	x := float64((g.TileSize + 5) * (1 + int(b.BodyPartType)))
+	y := float64(g.TileSize * 31)
+	op.GeoM.Translate(x, y)
+	screen.DrawImage(b.Image, &op)
+}
+
+func NewBodyPart(bodyPartType BodyPartType, creatureType CreatureType, g *Game) BodyPart {
+	bodyPart := BodyPart{
+		BodyPartType: bodyPartType,
+		CreatureType: creatureType,
+		Assembled:    false,
+		Object: Object{
+			X:      -1,
+			Y:      -1,
+			Active: false,
+		},
+	}
+	bodyPart.LoadImage(g)
+	return bodyPart
 }
 
 func (b *BodyPart) LoadImage(g *Game) {
@@ -86,7 +139,7 @@ func (b *BodyPart) LoadImage(g *Game) {
 		CREATURE_IMAGE[b.CreatureType] = creatureImage
 	}
 	uvIndices := BODY_PART_UV_INDICES[b.BodyPartType]
-	sliceSize := g.TileImageSize / 4
+	sliceSize := g.TileSize / 4
 	x1 := uvIndices[0] * sliceSize
 	y1 := uvIndices[1] * sliceSize
 	width := uvIndices[2] * sliceSize

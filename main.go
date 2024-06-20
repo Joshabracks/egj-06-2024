@@ -7,9 +7,9 @@ import (
 )
 
 func main() {
-	game := gameplay.Game{TileImageSize: 32}
-	w, h := ebiten.WindowSize()
-	game.SetTileSize(w, h)
+	game := gameplay.Game{TileSize: 32, Camera: ebiten.NewImage(1024, 1024)}
+	// w, h := ebiten.WindowSize()
+	// game.SetTileSize(w, h)
 	game.Init()
 	game.SaveSettings()
 	settingsErr := game.SaveSettings()

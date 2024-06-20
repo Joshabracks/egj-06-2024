@@ -1,8 +1,12 @@
 package gameplay
 
+import "github.com/hajimehoshi/ebiten/v2"
+
 type Game struct {
-	ActiveLevel  Level
-	TileDrawSize, TileImageSize int
+	ActiveLevel Level
+	TileSize    int
 	PlayerController
 	Settings
+	Camera *ebiten.Image
+	Scale float64
 }

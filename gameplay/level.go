@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"image/color"
 	"image/png"
-	"log"
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -81,44 +80,22 @@ func (l *Level) Load() error {
 }
 
 func (l *Level) LoadParts(g *Game) {
-	l.Head = BodyPart{BodyPartType: HEAD, CreatureType: GREY_BOI}
-	l.Torso = BodyPart{BodyPartType: TORSO, CreatureType: GREY_BOI}
-	l.ArmLeft = BodyPart{BodyPartType: ARM_LEFT, CreatureType: GREY_BOI}
-	l.ArmRight = BodyPart{BodyPartType: ARM_RIGHT, CreatureType: GREY_BOI}
-	l.LegLeft = BodyPart{BodyPartType: LEG_LEFT, CreatureType: GREY_BOI}
-	l.LegRight = BodyPart{BodyPartType: LEG_RIGHT, CreatureType: GREY_BOI}
-
-	l.Head.LoadImage(g)
-	l.Torso.LoadImage(g)
-	l.ArmLeft.LoadImage(g)
-	l.ArmRight.LoadImage(g)
-	l.LegLeft.LoadImage(g)
-	l.LegRight.LoadImage(g)
+	l.Head = NewBodyPart(HEAD, GREY_BOI, g)
+	l.Torso = NewBodyPart(TORSO, GREY_BOI, g)
+	l.ArmLeft = NewBodyPart(ARM_LEFT, GREY_BOI, g)
+	l.ArmRight = NewBodyPart(ARM_RIGHT, GREY_BOI, g)
+	l.LegLeft = NewBodyPart(LEG_LEFT, GREY_BOI, g)
+	l.LegRight = NewBodyPart(LEG_RIGHT, GREY_BOI, g)
 }
 
 func (l *Level) Render(g *Game) {
-	l.MapImage = ebiten.NewImage(l.width*g.TileDrawSize, l.height*g.TileDrawSize)
+	l.MapImage = ebiten.NewImage(l.width*g.TileSize, l.height*g.TileSize)
 	for x := 0; x < l.width; x++ {
 		for y := 0; y < l.height; y++ {
 			tileType := l.Map[x][y]
-			vector.DrawFilledRect(l.MapImage, float32(x*g.TileDrawSize), float32(y*g.TileDrawSize), float32(g.TileDrawSize), float32(g.TileDrawSize), TILE_COLOR_MAP[tileType], false)
+			vector.DrawFilledRect(l.MapImage, float32(x*g.TileSize), float32(y*g.TileSize), float32(g.TileSize), float32(g.TileSize), TILE_COLOR_MAP[tileType], false)
 		}
 	}
-	op := ebiten.DrawImageOptions{}
-	tileWarp := float64(g.TileDrawSize) / float64(g.TileImageSize)
-	op.GeoM.Scale(tileWarp, tileWarp)
-	op.GeoM.Translate(float64(g.TileDrawSize), float64(g.TileDrawSize) * 31)
-	l.MapImage.DrawImage(l.Head.Image, &op)
-	op.GeoM.Translate(float64(g.TileDrawSize), 0)
-	l.MapImage.DrawImage(l.Torso.Image, &op)
-	op.GeoM.Translate(float64(g.TileDrawSize), 0)
-	l.MapImage.DrawImage(l.ArmLeft.Image, &op)
-	op.GeoM.Translate(float64(g.TileDrawSize), 0)
-	l.MapImage.DrawImage(l.ArmRight.Image, &op)
-	op.GeoM.Translate(float64(g.TileDrawSize), 0)
-	l.MapImage.DrawImage(l.LegLeft.Image, &op)
-	op.GeoM.Translate(float64(g.TileDrawSize), 0)
-	l.MapImage.DrawImage(l.LegRight.Image, &op)
 }
 
 func (l *Level) RenderOverlay(g *Game, screen *ebiten.Image) {
@@ -126,5 +103,12 @@ func (l *Level) RenderOverlay(g *Game, screen *ebiten.Image) {
 	if stamina > 0 {
 		stamina = stamina / 100
 	}
-	vector.DrawFilledRect(screen, float32(g.TileDrawSize), float32(g.TileDrawSize/4), float32(g.TileDrawSize*8)*stamina, float32(g.TileDrawSize/2), color.White, false)
+	vector.DrawFilledRect(screen, float32(g.TileSize), float32(g.TileSize/4), float32(g.TileSize*8)*stamina, float32(g.TileSize/2), color.White, false)
+
+	l.Torso.Draw(g, screen)
+	l.ArmLeft.Draw(g, screen)
+	l.ArmRight.Draw(g, screen)
+	l.LegLeft.Draw(g, screen)
+	l.LegRight.Draw(g, screen)
+	l.Head.Draw(g, screen)
 }
