@@ -22,8 +22,13 @@ func (p *Player) Render(g *Game) {
 	midpoint := float32(g.TileDrawSize) / 2
 	x := midpoint
 	y := midpoint
+	p.Image.Clear()
 	vector.DrawFilledCircle(p.Image, x, y, float32(g.TileDrawSize / 3), color.Black, true)
 	vector.DrawFilledCircle(p.Image, x, y, float32(g.TileDrawSize / 4), color.RGBA{R: 255, G: 255, B: 0, A: 255}, true)
+}
+
+func (p *Player) Layout(g *Game) {
+	p.Image = ebiten.NewImage(g.TileDrawSize, g.TileDrawSize)
 }
 
 type PlayerController struct {
@@ -35,20 +40,21 @@ type PlayerController struct {
 type KeyBindingMap map[string][]ebiten.Key
 
 func NewPlayerController(g *Game) PlayerController {
+	player := Player{
+		Object: Object{
+			X:     1.5,
+			Y:     1.5,
+			Speed: 0.1,
+		},
+		Stamina: 100,
+		Boost:   0,
+	}
+	player.Layout(g)
 	return PlayerController{
 		Vertical: 0,
 		Horizontal: 0,
 		Scroll: 0,
-		Player: Player{
-			Object: Object{
-				X:     1.5,
-				Y:     1.5,
-				Speed: 0.1,
-			},
-			Stamina: 100,
-			Boost:   0,
-			Image: ebiten.NewImage(g.TileDrawSize, g.TileDrawSize),
-		},
+		Player: player,
 		KeyBindings: KeyBindingMap{
 			"left": []ebiten.Key{ebiten.KeyLeft, ebiten.KeyA},
 			"right": []ebiten.Key{ebiten.KeyRight, ebiten.KeyD},
