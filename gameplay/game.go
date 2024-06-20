@@ -2,7 +2,7 @@ package gameplay
 
 type Game struct {
 	ActiveLevel  Level
-	TileDrawSize int
+	TileDrawSize, TileImageSize int
 	PlayerController
 	Settings
 }

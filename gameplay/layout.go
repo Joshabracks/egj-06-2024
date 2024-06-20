@@ -15,6 +15,6 @@ func (g *Game) SetTileSize(outsideWidth, outsideHeight int) {
 		min = g.ScreenHeight
 	}
 
-	g.TileDrawSize = min / 32
+	g.TileDrawSize = min / g.TileImageSize
 	g.PlayerController.Player.Layout(g)
 }

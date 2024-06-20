@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	game := gameplay.Game{}
+	game := gameplay.Game{TileImageSize: 32}
 	w, h := ebiten.WindowSize()
 	game.SetTileSize(w, h)
 	game.Init()
@@ -21,6 +21,7 @@ func main() {
 	if testLevelErr != nil {
 		log.Println("[TEST LEVEL ERROR]", testLevelErr)
 	}
+	testLevel.LoadParts(&game)
 	testLevel.Render(&game)
 	game.ActiveLevel = testLevel
 	if settingsErr != nil {
