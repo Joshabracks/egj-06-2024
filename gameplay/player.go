@@ -14,37 +14,48 @@ type Player struct {
 	Item uint8
 	Stamina float64
 	Boost float64
+	Image *ebiten.Image
 	Object
 }
 
-func (p *Player) Draw(g *Game, screen *ebiten.Image) {
-	x := p.X * float32(g.TileDrawSize)
-	y := p.Y * float32(g.TileDrawSize)
-	vector.DrawFilledCircle(screen, x, y, float32(g.TileDrawSize / 3), color.Black, true)
-	vector.DrawFilledCircle(screen, x, y, float32(g.TileDrawSize / 4), color.RGBA{R: 255, G: 255, B: 0, A: 255}, true)
+func (p *Player) Render(g *Game) {
+	midpoint := float32(g.TileDrawSize) / 2
+	x := midpoint
+	y := midpoint
+	vector.DrawFilledCircle(p.Image, x, y, float32(g.TileDrawSize / 3), color.Black, true)
+	vector.DrawFilledCircle(p.Image, x, y, float32(g.TileDrawSize / 4), color.RGBA{R: 255, G: 255, B: 0, A: 255}, true)
 }
 
 type PlayerController struct {
-	Vertical, Horizontal, Scroll float32
+	Vertical, Horizontal, Scroll float64
 	Player
-	Left  []ebiten.Key
-	Right []ebiten.Key
-	Up    []ebiten.Key
-	Down  []ebiten.Key
-	Boost []ebiten.Key
+	KeyBindings KeyBindingMap
 }
 
-func NewPlayerController(p Player) PlayerController {
+type KeyBindingMap map[string][]ebiten.Key
+
+func NewPlayerController(g *Game) PlayerController {
 	return PlayerController{
 		Vertical: 0,
 		Horizontal: 0,
 		Scroll: 0,
-		Player: p,
-		Left: []ebiten.Key{ebiten.KeyLeft, ebiten.KeyA},
-		Right: []ebiten.Key{ebiten.KeyRight, ebiten.KeyD},
-		Up: []ebiten.Key{ebiten.KeyUp, ebiten.KeyW},
-		Down: []ebiten.Key{ebiten.KeyDown, ebiten.KeyS},
-		Boost: []ebiten.Key{ebiten.KeySpace, ebiten.KeyEnter},
+		Player: Player{
+			Object: Object{
+				X:     1.5,
+				Y:     1.5,
+				Speed: 0.1,
+			},
+			Stamina: 100,
+			Boost:   0,
+			Image: ebiten.NewImage(g.TileDrawSize, g.TileDrawSize),
+		},
+		KeyBindings: KeyBindingMap{
+			"left": []ebiten.Key{ebiten.KeyLeft, ebiten.KeyA},
+			"right": []ebiten.Key{ebiten.KeyRight, ebiten.KeyD},
+			"up": []ebiten.Key{ebiten.KeyUp, ebiten.KeyW},
+			"down": []ebiten.Key{ebiten.KeyDown, ebiten.KeyS},
+			"boost": []ebiten.Key{ebiten.KeySpace, ebiten.KeyEnter},
+		},
 	}
 }
 
@@ -59,9 +70,13 @@ func (pc *PlayerController) Reset() {
 	pc.Scroll = 0
 }
 
-func IsKeyPressed(keys []ebiten.Key) bool {
-	for _, key := range(keys) {
-		if ebiten.IsKeyPressed(key) {
+func (pc *PlayerController) IsKeyPressed(key string) bool {
+	bindings, ok := pc.KeyBindings[key]
+	if !ok {
+		return false
+	}
+	for _, binding := range(bindings) {
+		if ebiten.IsKeyPressed(binding) {
 			return true
 		}
 	}
@@ -70,16 +85,16 @@ func IsKeyPressed(keys []ebiten.Key) bool {
 
 func (pc *PlayerController) UpdateInput() {
 	pc.Reset()
-	if IsKeyPressed(pc.Up) {
+	if pc.IsKeyPressed("up") {
 		pc.Vertical--
 	}
-	if IsKeyPressed(pc.Down) {
+	if pc.IsKeyPressed("down") {
 		pc.Vertical++
 	}
-	if IsKeyPressed(pc.Left) {
+	if pc.IsKeyPressed("left") {
 		pc.Horizontal--
 	}
-	if IsKeyPressed(pc.Right) {
+	if pc.IsKeyPressed("right") {
 		pc.Horizontal++
 	}
 	pc.Truncate()
@@ -98,14 +113,14 @@ func (pc *PlayerController) UpdatePlayerPosition(game *Game) {
 	pc.Direction = math.Atan2(float64(yDiff), float64(xDiff)) * 180 / math.Pi
 	xDist := math.Cos(pc.Direction*math.Pi/180) * float64(pc.Speed)
 	yDist := math.Sin(pc.Direction*math.Pi/180) * float64(pc.Speed)
-	locX := x1 + float32(xDist)
-	locY := y1 + float32(yDist)
+	locX := x1 + xDist
+	locY := y1 + yDist
 	if InsideWall(locX, locY, game) {
-		if !InsideWall(locX, float32(y1), game) {
+		if !InsideWall(locX, y1, game) {
 			pc.Player.X = locX
 			return
 		}
-		if !InsideWall(float32(x1), locY, game) {
+		if !InsideWall(x1, locY, game) {
 			pc.Player.Y = locY
 			return
 		}
@@ -115,9 +130,9 @@ func (pc *PlayerController) UpdatePlayerPosition(game *Game) {
 	pc.Player.Y = locY
 }
 
-func InsideWall(x, y float32, game *Game) bool {
-	xIndex := int(float64(x) - math.Mod(float64(x), 1))
-	yIndex := int(float64(y) - math.Mod(float64(y), 1))
+func InsideWall(x, y float64, game *Game) bool {
+	xIndex := int(x - math.Mod(float64(x), 1))
+	yIndex := int(y - math.Mod(float64(y), 1))
 	if xIndex < 0 || xIndex >= game.ActiveLevel.width || yIndex < 0 || yIndex >= game.ActiveLevel.height {
 		return true
 	}

@@ -6,5 +6,10 @@ import (
 
 func (g *Game) Draw(screen *ebiten.Image){
 	screen.DrawImage(g.ActiveLevel.MapImage, &ebiten.DrawImageOptions{})
-	g.PlayerController.Player.Draw(g, screen)
+	op := &ebiten.DrawImageOptions{}
+	g.PlayerController.Player.Render(g)
+	op.GeoM.Translate(
+		(g.Player.X * float64(g.TileDrawSize)) - float64(g.TileDrawSize / 2), 
+		(g.Player.Y * float64(g.TileDrawSize)) - float64(g.TileDrawSize / 2))
+	screen.DrawImage(g.Player.Image, op)
 }
