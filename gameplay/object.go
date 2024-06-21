@@ -3,6 +3,7 @@ package gameplay
 import (
 	"game/util"
 	"image"
+	"math"
 	"math/rand"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -12,6 +13,37 @@ type Object struct {
 	X, Y, Speed float64
 	Direction   float64
 	Active      bool
+}
+
+func (o *Object) Collisions(g *Game) ([]*Object, []*BodyPart) {
+	objects := make([]*Object, 0)
+	bodyParts := make([]*BodyPart, 0)
+	if Collision(o, &g.ActiveLevel.Head.Object, g) {
+		bodyParts = append(bodyParts, &g.ActiveLevel.Head)
+	}
+	if Collision(o, &g.ActiveLevel.Torso.Object, g) {
+		bodyParts = append(bodyParts, &g.ActiveLevel.Torso)
+	}
+	if Collision(o, &g.ActiveLevel.ArmLeft.Object, g) {
+		bodyParts = append(bodyParts, &g.ActiveLevel.ArmLeft)
+	}
+	if Collision(o, &g.ActiveLevel.ArmRight.Object, g) {
+		bodyParts = append(bodyParts, &g.ActiveLevel.ArmRight)
+	}
+	if Collision(o, &g.ActiveLevel.LegLeft.Object, g) {
+		bodyParts = append(bodyParts, &g.ActiveLevel.LegLeft)
+	}
+	if Collision(o, &g.ActiveLevel.LegRight.Object, g) {
+		bodyParts = append(bodyParts, &g.ActiveLevel.LegRight)
+	}
+
+	return objects, bodyParts
+}
+
+func Collision(a, b *Object, g *Game) bool {
+	xDist := math.Abs(a.X - b.X)
+	yDist := math.Abs(a.Y - b.Y)
+	return xDist < 0.25 &&  yDist < 0.25
 }
 
 type BodyPartType uint8
@@ -89,8 +121,8 @@ func (b *BodyPart) Activate(g *Game) {
 	b.Active = true
 	r := rand.Intn(len(g.ActiveLevel.SpawnerCoordinates))
 	coords := g.ActiveLevel.SpawnerCoordinates[r]
-	b.X = float64(coords[0]) + 0.25
-	b.Y = float64(coords[1]) + 0.25
+	b.X = float64(coords[0]) + 0.5
+	b.Y = float64(coords[1]) + 0.5
 }	
 
 func (b *BodyPart) Draw(g *Game, screen *ebiten.Image) {
@@ -108,8 +140,10 @@ func (b *BodyPart) Draw(g *Game, screen *ebiten.Image) {
 }
 
 func (b *BodyPart) DrawActive(g *Game, screen *ebiten.Image) {
-	xOffset := b.X * float64(g.TileSize)
-	yOffset := b.Y * float64(g.TileSize)
+	bounds := b.Image.Bounds()
+
+	xOffset := (b.X * float64(g.TileSize)) - float64(bounds.Dx() / 2)
+	yOffset := (b.Y * float64(g.TileSize)) - float64(bounds.Dy() / 2)
 	op := ebiten.DrawImageOptions{}
 	op.GeoM.Translate(float64(xOffset), float64(yOffset))
 	screen.DrawImage(b.Image, &op)

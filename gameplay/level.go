@@ -39,6 +39,7 @@ type Level struct {
 	MapImage                                          *ebiten.Image
 	width, height                                     int
 	Head, Torso, ArmRight, ArmLeft, LegRight, LegLeft BodyPart
+	Objects []Object
 }
 
 func (l *Level) Load() error {

@@ -11,10 +11,10 @@ import (
 )
 
 type Player struct {
-	Item uint8
-	Boost bool
-	Stamina float32
-	Image *ebiten.Image
+	CarriedBodyPart *BodyPart
+	Boost           bool
+	Stamina         float32
+	Image           *ebiten.Image
 	Object
 }
 
@@ -23,12 +23,39 @@ func (p *Player) Render(g *Game) {
 	x := midpoint
 	y := midpoint
 	p.Image.Clear()
-	vector.DrawFilledCircle(p.Image, x, y, float32(g.TileSize / 3), color.Black, true)
-	vector.DrawFilledCircle(p.Image, x, y, float32(g.TileSize / 4), color.RGBA{R: 255, G: 255, B: 0, A: 255}, true)
+	vector.DrawFilledCircle(p.Image, x, y, float32(g.TileSize/3), color.Black, true)
+	vector.DrawFilledCircle(p.Image, x, y, float32(g.TileSize/4), color.RGBA{R: 255, G: 255, B: 0, A: 255}, true)
 }
 
 func (p *Player) Layout(g *Game) {
 	p.Image = ebiten.NewImage(g.TileSize, g.TileSize)
+}
+
+func (p *Player) UpdateCarriedItem(g *Game) {
+	if p.CarriedBodyPart == nil {
+		return
+	}
+	bodyCoords := g.ActiveLevel.BodyCoordinates
+	xIndex := int(p.X - math.Mod(float64(p.X), 1))
+	yIndex := int(p.Y - math.Mod(float64(p.Y), 1))
+	if xIndex == bodyCoords[0] && yIndex == bodyCoords[1] {
+		p.CarriedBodyPart.Assembled = true
+		p.CarriedBodyPart = nil
+		return
+	}
+
+	p.CarriedBodyPart.X = p.X
+	p.CarriedBodyPart.Y = p.Y
+}
+
+func (p *Player) CheckCollisions(g *Game) {
+	_, bpCollisions := p.Collisions(g)
+	for _, bp := range bpCollisions {
+		if !bp.Active || bp.Assembled || p.CarriedBodyPart == bp {
+			continue
+		}
+		p.CarriedBodyPart = bp
+	}
 }
 
 type PlayerController struct {
@@ -51,15 +78,15 @@ func NewPlayerController(g *Game) PlayerController {
 	}
 	player.Layout(g)
 	return PlayerController{
-		Vertical: 0,
+		Vertical:   0,
 		Horizontal: 0,
-		Scroll: 0,
-		Player: player,
+		Scroll:     0,
+		Player:     player,
 		KeyBindings: KeyBindingMap{
-			"left": []ebiten.Key{ebiten.KeyLeft, ebiten.KeyA},
+			"left":  []ebiten.Key{ebiten.KeyLeft, ebiten.KeyA},
 			"right": []ebiten.Key{ebiten.KeyRight, ebiten.KeyD},
-			"up": []ebiten.Key{ebiten.KeyUp, ebiten.KeyW},
-			"down": []ebiten.Key{ebiten.KeyDown, ebiten.KeyS},
+			"up":    []ebiten.Key{ebiten.KeyUp, ebiten.KeyW},
+			"down":  []ebiten.Key{ebiten.KeyDown, ebiten.KeyS},
 			"boost": []ebiten.Key{ebiten.KeySpace, ebiten.KeyEnter},
 		},
 	}
@@ -81,7 +108,7 @@ func (pc *PlayerController) IsKeyPressed(key string) bool {
 	if !ok {
 		return false
 	}
-	for _, binding := range(bindings) {
+	for _, binding := range bindings {
 		if ebiten.IsKeyPressed(binding) {
 			return true
 		}
