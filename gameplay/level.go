@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"image/color"
 	"image/png"
+	"math"
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -39,7 +40,41 @@ type Level struct {
 	MapImage                                          *ebiten.Image
 	width, height                                     int
 	Head, Torso, ArmRight, ArmLeft, LegRight, LegLeft BodyPart
-	Objects []Object
+	// Objects                                           []Object
+	Enemies []*EnemyController
+	graph[Vector]
+}
+
+func (l *Level) PopulateEnemies(g *Game) {
+	for _, coords := range l.SpawnerCoordinates {
+		if len(l.Enemies) > 3 {
+			break
+		}
+		enemy := NewEnemy(float64(coords[0])+0.5, float64(coords[1])+0.5, g)
+		l.Enemies = append(l.Enemies, enemy)
+	}
+}
+
+func (l *Level) ActiveBodyPartLocation(g *Game) (float64, float64) {
+	if l.Head.Active && !l.Head.Assembled {
+		return Location(l.Head.X, l.Head.Y, g)
+	}
+	if l.Torso.Active && !l.Torso.Assembled {
+		return Location(l.Torso.X, l.Torso.Y, g)
+	}
+	if l.ArmRight.Active && !l.ArmRight.Assembled {
+		return Location(l.ArmRight.X, l.ArmRight.Y, g)
+	}
+	if l.ArmLeft.Active && !l.ArmLeft.Assembled {
+		return Location(l.ArmLeft.X, l.ArmLeft.Y, g)
+	}
+	if l.LegRight.Active && !l.LegRight.Assembled {
+		return Location(l.LegRight.X, l.LegRight.Y, g)
+	}
+	if l.LegLeft.Active && !l.LegLeft.Assembled {
+		return Location(l.LegLeft.X, l.LegLeft.Y, g)
+	}
+	return -1, -1
 }
 
 func (l *Level) Load() error {
@@ -127,7 +162,7 @@ func (l *Level) Render(g *Game) {
 }
 
 func (l *Level) RenderOverlay(g *Game, screen *ebiten.Image) {
-	stamina := g.Player.Stamina
+	stamina := g.Character.Stamina
 	if stamina > 0 {
 		stamina = stamina / 100
 	}
@@ -139,4 +174,48 @@ func (l *Level) RenderOverlay(g *Game, screen *ebiten.Image) {
 	l.LegLeft.Draw(g, screen)
 	l.LegRight.Draw(g, screen)
 	l.Head.Draw(g, screen)
+}
+
+func nodeDist(p, q Vector) float64 {
+	dx := p.X - q.X
+	dy := p.Y - q.Y
+	return math.Sqrt(dx*dx + dy*dy)
+}
+
+type graph[Node comparable] map[Node][]Node
+type Vector struct {
+	X, Y float64
+}
+
+func NewVector(x, y float64) Vector {
+	return Vector{X: x, Y: y}
+}
+func newGraph[Node comparable]() graph[Node] {
+	return make(graph[Node])
+}
+
+func (g graph[Node]) link(a, b Node) graph[Node] {
+	g[a] = append(g[a], b)
+	g[b] = append(g[b], a)
+	return g
+}
+
+func (g graph[Node]) Neighbours(n Node) []Node {
+	return g[n]
+}
+
+func (l *Level) InitGraph() {
+	l.graph = newGraph[Vector]()
+	for x, row := range l.Map {
+		for y, cell := range row {
+			if cell != TILE_WALL {
+				vector := Vector{X: float64(x), Y: float64(y)}
+				l.graph[vector] = []Vector{
+					NewVector(vector.X - 1, vector.Y - 1), NewVector(vector.X, vector.Y - 1), NewVector(vector.X + 1, vector.Y - 1),
+					NewVector(vector.X - 1, vector.Y), NewVector(vector.X + 1, vector.Y),
+					NewVector(vector.X - 1, vector.Y + 1), NewVector(vector.X, vector.Y + 1), NewVector(vector.X+ 1, vector.Y + 1),
+				}
+			}
+		}
+	}
 }

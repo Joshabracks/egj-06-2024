@@ -22,6 +22,8 @@ func main() {
 		log.Println("[TEST LEVEL ERROR]", testLevelErr)
 	}
 	testLevel.LoadParts(&game)
+	testLevel.PopulateEnemies(&game)
+	testLevel.InitGraph()
 	testLevel.Render(&game)
 	game.ActiveLevel = testLevel
 	if settingsErr != nil {

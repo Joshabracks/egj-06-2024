@@ -10,69 +10,70 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-type Player struct {
+type Character struct {
 	CarriedBodyPart *BodyPart
-	Boost           bool
+	Boost 			bool
 	Stamina         float32
 	Image           *ebiten.Image
+	Color			color.RGBA
 	Object
 }
 
-func (p *Player) Render(g *Game) {
+func (c *Character) Render(g *Game) {
 	midpoint := float32(g.TileSize) / 2
 	x := midpoint
 	y := midpoint
-	p.Image.Clear()
-	vector.DrawFilledCircle(p.Image, x, y, float32(g.TileSize/3), color.Black, true)
-	vector.DrawFilledCircle(p.Image, x, y, float32(g.TileSize/4), color.RGBA{R: 255, G: 255, B: 0, A: 255}, true)
+	c.Image.Clear()
+	vector.DrawFilledCircle(c.Image, x, y, float32(g.TileSize/3), color.Black, true)
+	vector.DrawFilledCircle(c.Image, x, y, float32(g.TileSize/4), c.Color, true)
 }
 
-func (p *Player) Layout(g *Game) {
-	p.Image = ebiten.NewImage(g.TileSize, g.TileSize)
+func (c *Character) Layout(g *Game) {
+	c.Image = ebiten.NewImage(g.TileSize, g.TileSize)
 }
 
-func (p *Player) UpdateCarriedItem(g *Game) {
-	if p.CarriedBodyPart == nil {
+func (c *Character) UpdateCarriedItem(g *Game) {
+	if c.CarriedBodyPart == nil {
 		return
 	}
 	bodyCoords := g.ActiveLevel.BodyCoordinates
-	xIndex := int(p.X - math.Mod(float64(p.X), 1))
-	yIndex := int(p.Y - math.Mod(float64(p.Y), 1))
-	if xIndex == bodyCoords[0] && yIndex == bodyCoords[1] {
-		p.CarriedBodyPart.Assembled = true
-		p.CarriedBodyPart = nil
+	xIndex, yIndex := Location(c.X, c.Y, g)
+	if int(xIndex) == bodyCoords[0] && int(yIndex) == bodyCoords[1] {
+		c.CarriedBodyPart.Assembled = true
+		c.CarriedBodyPart = nil
 		return
 	}
 
-	p.CarriedBodyPart.X = p.X
-	p.CarriedBodyPart.Y = p.Y
+	c.CarriedBodyPart.X = c.X
+	c.CarriedBodyPart.Y = c.Y
 }
 
-func (p *Player) CheckCollisions(g *Game) {
-	_, bpCollisions := p.Collisions(g)
+func (c *Character) CheckCollisions(g *Game) {
+	_, bpCollisions := c.Collisions(g)
 	for _, bp := range bpCollisions {
-		if !bp.Active || bp.Assembled || p.CarriedBodyPart == bp {
+		if !bp.Active || bp.Assembled || c.CarriedBodyPart == bp {
 			continue
 		}
-		p.CarriedBodyPart = bp
+		c.CarriedBodyPart = bp
 	}
 }
 
 type PlayerController struct {
 	Vertical, Horizontal, Scroll float64
-	Player
+	Character
 	KeyBindings KeyBindingMap
 }
 
 type KeyBindingMap map[string][]ebiten.Key
 
 func NewPlayerController(g *Game) PlayerController {
-	player := Player{
+	player := Character{
 		Object: Object{
 			X:     1.5,
 			Y:     1.5,
 			Speed: 0.1,
 		},
+		Color: 	color.RGBA{R: 255, G: 255, B: 0, A: 255},
 		Boost:   false,
 		Stamina: 100,
 	}
@@ -81,7 +82,7 @@ func NewPlayerController(g *Game) PlayerController {
 		Vertical:   0,
 		Horizontal: 0,
 		Scroll:     0,
-		Player:     player,
+		Character:  player,
 		KeyBindings: KeyBindingMap{
 			"left":  []ebiten.Key{ebiten.KeyLeft, ebiten.KeyA},
 			"right": []ebiten.Key{ebiten.KeyRight, ebiten.KeyD},
@@ -155,8 +156,8 @@ func (pc *PlayerController) UpdatePlayerPosition(game *Game) {
 	if pc.Horizontal == 0 && pc.Vertical == 0 {
 		return
 	}
-	x1 := pc.Player.X
-	y1 := pc.Player.Y
+	x1 := pc.Character.X
+	y1 := pc.Character.Y
 	x2 := x1 + pc.Horizontal
 	y2 := y1 + pc.Vertical
 	xDiff := x2 - x1
@@ -168,17 +169,17 @@ func (pc *PlayerController) UpdatePlayerPosition(game *Game) {
 	locY := y1 + yDist
 	if InsideWall(locX, locY, game) {
 		if !InsideWall(locX, y1, game) {
-			pc.Player.X = locX
+			pc.Character.X = locX
 			return
 		}
 		if !InsideWall(x1, locY, game) {
-			pc.Player.Y = locY
+			pc.Character.Y = locY
 			return
 		}
 		return
 	}
-	pc.Player.X = locX
-	pc.Player.Y = locY
+	pc.Character.X = locX
+	pc.Character.Y = locY
 }
 
 func InsideWall(x, y float64, game *Game) bool {

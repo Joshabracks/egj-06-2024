@@ -15,6 +15,12 @@ type Object struct {
 	Active      bool
 }
 
+func Location(x, y float64, g *Game) (float64, float64) {
+	xIndex := x - math.Mod(float64(x), 1)
+	yIndex := y - math.Mod(float64(y), 1)
+	return xIndex, yIndex
+}
+
 func (o *Object) Collisions(g *Game) ([]*Object, []*BodyPart) {
 	objects := make([]*Object, 0)
 	bodyParts := make([]*BodyPart, 0)
