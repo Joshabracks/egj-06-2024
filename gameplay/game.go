@@ -1,7 +1,7 @@
 package gameplay
 
 import (
-	"fmt"
+	"os"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -18,10 +18,14 @@ type Game struct {
 
 func (g *Game) LoadLevel(levelCount int) {
 	g.PlayerController = NewPlayerController(g)
-	filepath := fmt.Sprintf("asset/level/map_%d.png", 1)
-	log.Println("Level: ", levelCount)
+	files, err := os.ReadDir("asset/level")
+	if err != nil {
+		log.Fatal(err)
+	}
+	file := files[levelCount % len(files)].Name()
+	log.Println("Level: ", levelCount, file)
 	level := Level{
-		Filepath: filepath,
+		Filepath: "asset/level/" + file,
 	}
 
 	levelErr := level.Load(levelCount)

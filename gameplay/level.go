@@ -2,12 +2,16 @@ package gameplay
 
 import (
 	"bytes"
+	"fmt"
 	"image/color"
 	"image/png"
+	"log"
 	"math"
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
@@ -165,6 +169,15 @@ func (l *Level) Render(g *Game) {
 	}
 }
 
+var mplusFaceSource *text.GoTextFaceSource
+func textInit() {
+	s, err := text.NewGoTextFaceSource(bytes.NewReader(fonts.MPlus1pRegular_ttf))
+	if err != nil {
+		log.Fatal(err)
+	}
+	mplusFaceSource = s
+}
+
 func (l *Level) RenderOverlay(g *Game, screen *ebiten.Image) {
 	stamina := g.Character.Stamina
 	if stamina > 0 {
@@ -178,6 +191,11 @@ func (l *Level) RenderOverlay(g *Game, screen *ebiten.Image) {
 	l.LegLeft.Draw(g, screen)
 	l.LegRight.Draw(g, screen)
 	l.Head.Draw(g, screen)
+	op := &text.DrawOptions{}
+	op.ColorScale.ScaleWithColor(color.White)
+	op.GeoM.Translate(float64(g.TileSize) * 26, 0)
+	textOverlay := fmt.Sprint("Level: ", g.ActiveLevel.Count + 1)
+	text.Draw(screen, textOverlay, &text.GoTextFace{Source: mplusFaceSource, Size: 24}, op)
 }
 
 func nodeDist(p, q Vector) float64 {

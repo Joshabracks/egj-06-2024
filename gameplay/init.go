@@ -5,6 +5,7 @@ import (
 )
 
 func (g *Game) Init() {
+	textInit()
 	g.InitSettings()
 	width, height := ebiten.WindowSize()
 	ebiten.SetWindowSize(width, height)

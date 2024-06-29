@@ -9,15 +9,14 @@ import (
 
 func main() {
 	game := gameplay.Game{TileSize: 32, Camera: ebiten.NewImage(1024, 1024)}
-	// w, h := ebiten.WindowSize()
-	// game.SetTileSize(w, h)
 	game.Init()
 	game.SaveSettings()
 	settingsErr := game.SaveSettings()
-	game.LoadLevel(1)
+	game.LoadLevel(0)
 	if settingsErr != nil {
 		log.Println("[SaveFile]", settingsErr)
 	}
+	ebiten.MaximizeWindow()
 	if err := ebiten.RunGame(&game); err != nil {
 		log.Fatal(err)
 	}
