@@ -59,7 +59,7 @@ func (c *Character) CheckCollisions(g *Game) {
 	if len(enemyCollisions) > 0 {
 		c.Stamina -= 1
 		if c.Stamina < 0 {
-			g.LoadLevel(1)
+			g.LoadLevel(0)
 		}
 	}
 }
@@ -123,8 +123,21 @@ func (pc *PlayerController) IsKeyPressed(key string) bool {
 	return false
 }
 
-func (pc *PlayerController) UpdateInput() {
+var enterKeyDown = false
+
+func (pc *PlayerController) UpdateInput(g *Game) {
 	pc.Reset()
+	if ebiten.IsKeyPressed(ebiten.KeyEnter) && !enterKeyDown {
+		if !g.ActiveLevel.Pause {
+			g.ActiveLevel.Pause = true
+		} else {
+			g.ActiveLevel.Pause = false
+		}
+		enterKeyDown = true
+	}
+	if !ebiten.IsKeyPressed(ebiten.KeyEnter) {
+		enterKeyDown = false
+	}
 	if pc.IsKeyPressed("up") {
 		pc.Vertical--
 	}

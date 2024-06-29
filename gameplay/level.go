@@ -6,7 +6,6 @@ import (
 	"image/color"
 	"image/png"
 	"log"
-	"math"
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -37,6 +36,7 @@ var TILE_COLOR_MAP = map[uint8]color.Color{
 }
 
 type Level struct {
+	Pause bool
 	Count int
 	Filepath                                          string
 	Map                                               [][]uint8
@@ -84,6 +84,7 @@ func (l *Level) PopulateEnemies(g *Game, count int) {
 
 func (l *Level) Load(levelCount int) error {
 	l.Count = levelCount
+	l.Pause = true
 	data, err := os.ReadFile(l.Filepath)
 	if err != nil {
 		return err
@@ -198,11 +199,11 @@ func (l *Level) RenderOverlay(g *Game, screen *ebiten.Image) {
 	text.Draw(screen, textOverlay, &text.GoTextFace{Source: mplusFaceSource, Size: 24}, op)
 }
 
-func nodeDist(p, q Vector) float64 {
-	dx := p.X - q.X
-	dy := p.Y - q.Y
-	return math.Sqrt(dx*dx + dy*dy)
-}
+// func nodeDist(p, q Vector) float64 {
+// 	dx := p.X - q.X
+// 	dy := p.Y - q.Y
+// 	return math.Sqrt(dx*dx + dy*dy)
+// }
 
 type graph[Node comparable] map[Node][]Node
 type Vector struct {

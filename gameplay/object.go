@@ -55,7 +55,7 @@ func (o *Object) Collisions(g *Game) ([]*Object, []*BodyPart) {
 func Collision(a, b *Object, g *Game) bool {
 	xDist := math.Abs(a.X - b.X)
 	yDist := math.Abs(a.Y - b.Y)
-	return xDist < 0.25 &&  yDist < 0.25
+	return xDist < 0.45 &&  yDist < 0.45
 }
 
 type BodyPartType uint8

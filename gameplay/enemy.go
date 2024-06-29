@@ -86,7 +86,7 @@ func (ec *EnemyController) Move(g *Game) {
 			// }
 		}
 	}
-	if clearPath { // enemy chases player
+	if clearPath || g.ActiveLevel.Map[int(x)][int(y)] == TILE_WALL { // enemy chases player
 		
 		xDiff := math.Abs(ec.X - g.PlayerController.X)
 		yDiff := math.Abs(ec.Y - g.PlayerController.Y)

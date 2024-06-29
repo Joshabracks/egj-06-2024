@@ -1,13 +1,54 @@
 package gameplay
 
 import (
+	"fmt"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
+func pauseScreen(g *Game, screen *ebiten.Image) {
+	a := make([]string, 0)
+	if g.ActiveLevel.Count == 0 {
+		a = append(a, []string{
+			"You are the Body Builder",
+			"",
+			"There's a loose body part somewhere on the stage.",
+			"Move to the body part to pick it up and move to the grey square",
+			"to add it to the body.",
+			"If an enemy drains your energy completely, it's game over.",
+			"Sprinting draings your energy, but won't kill you",
+			"",
+			"Controls:",
+			"---Move-- WASD",
+			"--Sprint- Spacebar",
+			"--Pause-- Enter",
+			"",
+			"",}...)
+	}
+	a = append(a, []string{
+		fmt.Sprintf("Level %d", g.ActiveLevel.Count + 1),
+		"",
+		"",
+		"Press ENTER to continue",
+	}...)
+	
+	screen.Clear()
+	for i, line := range a {
+		op := &text.DrawOptions{}
+		op.ColorScale.ScaleWithColor(color.White)
+		op.GeoM.Translate(float64(g.TileSize), float64(g.TileSize*i))
+		text.Draw(screen, line, &text.GoTextFace{Source: mplusFaceSource, Size: 24}, op)
+	}
+}
+
 func (g *Game) Draw(screen *ebiten.Image) {
+	if g.ActiveLevel.Pause {
+		pauseScreen(g, screen)
+		return
+	}
 	g.Camera.DrawImage(g.ActiveLevel.MapImage, &ebiten.DrawImageOptions{})
 	op := &ebiten.DrawImageOptions{}
 	g.PlayerController.Render(g)
