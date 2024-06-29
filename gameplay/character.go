@@ -10,56 +10,90 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-type Player struct {
-	Item uint8
-	Boost bool
-	Stamina float32
-	Image *ebiten.Image
+type Character struct {
+	CarriedBodyPart *BodyPart
+	Boost           bool
+	Stamina         float32
+	Image           *ebiten.Image
+	Color           color.RGBA
 	Object
 }
 
-func (p *Player) Render(g *Game) {
-	midpoint := float32(g.TileDrawSize) / 2
+func (c *Character) Render(g *Game) {
+	midpoint := float32(g.TileSize) / 2
 	x := midpoint
 	y := midpoint
-	p.Image.Clear()
-	vector.DrawFilledCircle(p.Image, x, y, float32(g.TileDrawSize / 3), color.Black, true)
-	vector.DrawFilledCircle(p.Image, x, y, float32(g.TileDrawSize / 4), color.RGBA{R: 255, G: 255, B: 0, A: 255}, true)
+	c.Image.Clear()
+	vector.DrawFilledCircle(c.Image, x, y, float32(g.TileSize/3), color.Black, true)
+	vector.DrawFilledCircle(c.Image, x, y, float32(g.TileSize/4), c.Color, true)
 }
 
-func (p *Player) Layout(g *Game) {
-	p.Image = ebiten.NewImage(g.TileDrawSize, g.TileDrawSize)
+func (c *Character) Layout(g *Game) {
+	c.Image = ebiten.NewImage(g.TileSize, g.TileSize)
+}
+
+func (c *Character) UpdateCarriedItem(g *Game) {
+	if c.CarriedBodyPart == nil {
+		return
+	}
+	bodyCoords := g.ActiveLevel.BodyCoordinates
+	xIndex, yIndex := Location(c.X, c.Y, g)
+	if int(xIndex) == bodyCoords[0] && int(yIndex) == bodyCoords[1] {
+		c.CarriedBodyPart.Assembled = true
+		c.CarriedBodyPart = nil
+		return
+	}
+
+	c.CarriedBodyPart.X = c.X
+	c.CarriedBodyPart.Y = c.Y
+}
+
+func (c *Character) CheckCollisions(g *Game) {
+	enemyCollisions, bpCollisions := c.Collisions(g)
+	for _, bp := range bpCollisions {
+		if !bp.Active || bp.Assembled || c.CarriedBodyPart == bp {
+			continue
+		}
+		c.CarriedBodyPart = bp
+	}
+	if len(enemyCollisions) > 0 {
+		c.Stamina -= 1
+		if c.Stamina < 0 {
+			g.LoadLevel(0)
+		}
+	}
 }
 
 type PlayerController struct {
 	Vertical, Horizontal, Scroll float64
-	Player
+	Character
 	KeyBindings KeyBindingMap
 }
 
 type KeyBindingMap map[string][]ebiten.Key
 
 func NewPlayerController(g *Game) PlayerController {
-	player := Player{
+	player := Character{
 		Object: Object{
 			X:     1.5,
 			Y:     1.5,
 			Speed: 0.1,
 		},
+		Color:   color.RGBA{R: 255, G: 255, B: 0, A: 255},
 		Boost:   false,
 		Stamina: 100,
 	}
 	player.Layout(g)
 	return PlayerController{
-		Vertical: 0,
+		Vertical:   0,
 		Horizontal: 0,
-		Scroll: 0,
-		Player: player,
+		Scroll:     0,
+		Character:  player,
 		KeyBindings: KeyBindingMap{
-			"left": []ebiten.Key{ebiten.KeyLeft, ebiten.KeyA},
+			"left":  []ebiten.Key{ebiten.KeyLeft, ebiten.KeyA},
 			"right": []ebiten.Key{ebiten.KeyRight, ebiten.KeyD},
-			"up": []ebiten.Key{ebiten.KeyUp, ebiten.KeyW},
-			"down": []ebiten.Key{ebiten.KeyDown, ebiten.KeyS},
+			"up":    []ebiten.Key{ebiten.KeyUp, ebiten.KeyW},
+			"down":  []ebiten.Key{ebiten.KeyDown, ebiten.KeyS},
 			"boost": []ebiten.Key{ebiten.KeySpace, ebiten.KeyEnter},
 		},
 	}
@@ -81,7 +115,7 @@ func (pc *PlayerController) IsKeyPressed(key string) bool {
 	if !ok {
 		return false
 	}
-	for _, binding := range(bindings) {
+	for _, binding := range bindings {
 		if ebiten.IsKeyPressed(binding) {
 			return true
 		}
@@ -89,8 +123,21 @@ func (pc *PlayerController) IsKeyPressed(key string) bool {
 	return false
 }
 
-func (pc *PlayerController) UpdateInput() {
+var enterKeyDown = false
+
+func (pc *PlayerController) UpdateInput(g *Game) {
 	pc.Reset()
+	if ebiten.IsKeyPressed(ebiten.KeyEnter) && !enterKeyDown {
+		if !g.ActiveLevel.Pause {
+			g.ActiveLevel.Pause = true
+		} else {
+			g.ActiveLevel.Pause = false
+		}
+		enterKeyDown = true
+	}
+	if !ebiten.IsKeyPressed(ebiten.KeyEnter) {
+		enterKeyDown = false
+	}
 	if pc.IsKeyPressed("up") {
 		pc.Vertical--
 	}
@@ -116,14 +163,20 @@ func (pc *PlayerController) UpdatePlayerPosition(game *Game) {
 	if pc.Boost && pc.Stamina > 0 {
 		speed *= 2
 		pc.Stamina -= 0.5
+		if pc.Stamina < 0 {
+			pc.Stamina = 0
+		}
 	} else if !pc.Boost && pc.Stamina < 100 {
 		pc.Stamina += 0.05
+		if pc.Stamina > 100 {
+			pc.Stamina = 100
+		}
 	}
 	if pc.Horizontal == 0 && pc.Vertical == 0 {
 		return
 	}
-	x1 := pc.Player.X
-	y1 := pc.Player.Y
+	x1 := pc.Character.X
+	y1 := pc.Character.Y
 	x2 := x1 + pc.Horizontal
 	y2 := y1 + pc.Vertical
 	xDiff := x2 - x1
@@ -135,17 +188,17 @@ func (pc *PlayerController) UpdatePlayerPosition(game *Game) {
 	locY := y1 + yDist
 	if InsideWall(locX, locY, game) {
 		if !InsideWall(locX, y1, game) {
-			pc.Player.X = locX
+			pc.Character.X = locX
 			return
 		}
 		if !InsideWall(x1, locY, game) {
-			pc.Player.Y = locY
+			pc.Character.Y = locY
 			return
 		}
 		return
 	}
-	pc.Player.X = locX
-	pc.Player.Y = locY
+	pc.Character.X = locX
+	pc.Character.Y = locY
 }
 
 func InsideWall(x, y float64, game *Game) bool {

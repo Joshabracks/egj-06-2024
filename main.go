@@ -1,31 +1,22 @@
 package main
 
 import (
-	"log"
-	"github.com/hajimehoshi/ebiten/v2"
 	"game/gameplay"
+	"log"
+
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 func main() {
-	game := gameplay.Game{}
-	w, h := ebiten.WindowSize()
-	game.SetTileSize(w, h)
+	game := gameplay.Game{TileSize: 32, Camera: ebiten.NewImage(1024, 1024)}
 	game.Init()
 	game.SaveSettings()
 	settingsErr := game.SaveSettings()
-	testLevel := gameplay.Level{
-		Filepath: "asset/level/map_01.png",
-	}
-	
-	testLevelErr := testLevel.Load()
-	if testLevelErr != nil {
-		log.Println("[TEST LEVEL ERROR]", testLevelErr)
-	}
-	testLevel.Render(&game)
-	game.ActiveLevel = testLevel
+	game.LoadLevel(0)
 	if settingsErr != nil {
 		log.Println("[SaveFile]", settingsErr)
 	}
+	ebiten.MaximizeWindow()
 	if err := ebiten.RunGame(&game); err != nil {
 		log.Fatal(err)
 	}

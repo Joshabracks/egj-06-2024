@@ -5,11 +5,11 @@ import (
 )
 
 func (g *Game) Init() {
+	textInit()
 	g.InitSettings()
 	width, height := ebiten.WindowSize()
 	ebiten.SetWindowSize(width, height)
 
-	g.PlayerController = NewPlayerController(g)
 	ebiten.SetWindowTitle("Body Builder")
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 }
