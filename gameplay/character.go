@@ -12,10 +12,10 @@ import (
 
 type Character struct {
 	CarriedBodyPart *BodyPart
-	Boost 			bool
+	Boost           bool
 	Stamina         float32
 	Image           *ebiten.Image
-	Color			color.RGBA
+	Color           color.RGBA
 	Object
 }
 
@@ -49,12 +49,18 @@ func (c *Character) UpdateCarriedItem(g *Game) {
 }
 
 func (c *Character) CheckCollisions(g *Game) {
-	_, bpCollisions := c.Collisions(g)
+	enemyCollisions, bpCollisions := c.Collisions(g)
 	for _, bp := range bpCollisions {
 		if !bp.Active || bp.Assembled || c.CarriedBodyPart == bp {
 			continue
 		}
 		c.CarriedBodyPart = bp
+	}
+	if len(enemyCollisions) > 0 {
+		c.Stamina -= 1
+		if c.Stamina < 0 {
+			g.LoadLevel(1)
+		}
 	}
 }
 
@@ -73,7 +79,7 @@ func NewPlayerController(g *Game) PlayerController {
 			Y:     1.5,
 			Speed: 0.1,
 		},
-		Color: 	color.RGBA{R: 255, G: 255, B: 0, A: 255},
+		Color:   color.RGBA{R: 255, G: 255, B: 0, A: 255},
 		Boost:   false,
 		Stamina: 100,
 	}

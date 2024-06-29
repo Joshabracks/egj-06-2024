@@ -1,9 +1,10 @@
 package main
 
 import (
-	"log"
-	"github.com/hajimehoshi/ebiten/v2"
 	"game/gameplay"
+	"log"
+
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 func main() {
@@ -13,19 +14,7 @@ func main() {
 	game.Init()
 	game.SaveSettings()
 	settingsErr := game.SaveSettings()
-	testLevel := gameplay.Level{
-		Filepath: "asset/level/map_01.png",
-	}
-	
-	testLevelErr := testLevel.Load()
-	if testLevelErr != nil {
-		log.Println("[TEST LEVEL ERROR]", testLevelErr)
-	}
-	testLevel.LoadParts(&game)
-	testLevel.PopulateEnemies(&game)
-	testLevel.InitGraph()
-	testLevel.Render(&game)
-	game.ActiveLevel = testLevel
+	game.LoadLevel(1)
 	if settingsErr != nil {
 		log.Println("[SaveFile]", settingsErr)
 	}

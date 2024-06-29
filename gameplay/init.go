@@ -9,7 +9,6 @@ func (g *Game) Init() {
 	width, height := ebiten.WindowSize()
 	ebiten.SetWindowSize(width, height)
 
-	g.PlayerController = NewPlayerController(g)
 	ebiten.SetWindowTitle("Body Builder")
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 }

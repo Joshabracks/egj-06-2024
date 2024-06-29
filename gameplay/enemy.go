@@ -14,12 +14,14 @@ type EnemyController struct {
 	Character
 }
 
+var enemyStartSpeed float64 = 0.05
+
 func NewEnemy(x, y float64, g *Game) *EnemyController {
 	character := Character{
 		Object: Object{
 			X:     x,
 			Y:     y,
-			Speed: 0.05,
+			Speed: enemyStartSpeed,
 		},
 		Boost:   false,
 		Stamina: 100,
@@ -28,41 +30,6 @@ func NewEnemy(x, y float64, g *Game) *EnemyController {
 	character.Layout(g)
 	return &EnemyController{Character: character}
 }
-
-// func (ec *EnemyController) Move(g *Game) {
-// 	x1, y1 := Location(ec.X, ec.Y, g)
-// 	targetx, targety := g.ActiveLevel.ActiveBodyPartLocation(g)
-// 	startKey := Vector{X: x1, Y: y1}
-// 	ec.Path = astar.FindPath[Vector](
-// 		g.ActiveLevel.graph,
-// 		startKey,
-// 		Vector{X: float64(targetx), Y: float64(targety)},
-// 		nodeDist,
-// 		nodeDist)
-// 	n := 0
-// 	if len(ec.Path) == 0 {
-// 		return
-// 	}
-// 	for startKey == ec.Path[n] {
-// 		n ++
-// 		if n >= len(ec.Path) {
-// 			return
-// 		}
-// 	}
-// 	nextStep := ec.Path[n]
-
-// 	xDiff := nextStep.X - ec.X
-// 	yDiff := nextStep.Y - ec.Y
-// 	ec.Character.Direction = math.Atan2(float64(yDiff), float64(xDiff)) * 180 / math.Pi
-
-// 	speed := ec.Character.Speed
-// 	xDist := math.Cos(ec.Direction*math.Pi/180) * float64(speed)
-// 	yDist := math.Sin(ec.Direction*math.Pi/180) * float64(speed)
-// 	locX := ec.X + xDist
-// 	locY := ec.Y + yDist
-// 	ec.Character.X = locX
-// 	ec.Character.Y = locY
-// }
 
 func (ec *EnemyController) Move(g *Game) {
 	targetX, targetY := Location(g.PlayerController.X, g.PlayerController.Y, g)
@@ -119,14 +86,15 @@ func (ec *EnemyController) Move(g *Game) {
 			// }
 		}
 	}
-	if clearPath {
+	if clearPath { // enemy chases player
+		
 		xDiff := math.Abs(ec.X - g.PlayerController.X)
 		yDiff := math.Abs(ec.Y - g.PlayerController.Y)
 		distance := math.Sqrt(yDiff * yDiff + xDiff * xDiff)
 		normX := (ec.X - g.PlayerController.X) / distance
 		normY := (ec.Y - g.PlayerController.Y) / distance
-		ec.X = ec.X - (normX * ec.Speed)
-		ec.Y = ec.Y - (normY * ec.Speed)
+		ec.X = ec.X - (normX * ec.Speed * 2)
+		ec.Y = ec.Y - (normY * ec.Speed * 2)
 		return
 	}
 	if ec.Horizontal == 0 && ec.Vertical == 0 {

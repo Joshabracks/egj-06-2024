@@ -42,7 +42,13 @@ func (o *Object) Collisions(g *Game) ([]*Object, []*BodyPart) {
 	if Collision(o, &g.ActiveLevel.LegRight.Object, g) {
 		bodyParts = append(bodyParts, &g.ActiveLevel.LegRight)
 	}
-
+	for _, object := range(g.ActiveLevel.Enemies) {
+		xDist := math.Abs(object.X - o.X)
+		yDist := math.Abs(object.Y - o.Y)
+		if xDist + yDist < 0.25 {
+			objects = append(objects, &object.Object)
+		}
+	}
 	return objects, bodyParts
 }
 

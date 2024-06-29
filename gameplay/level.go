@@ -33,6 +33,7 @@ var TILE_COLOR_MAP = map[uint8]color.Color{
 }
 
 type Level struct {
+	Count int
 	Filepath                                          string
 	Map                                               [][]uint8
 	BodyCoordinates                                   [2]int
@@ -45,9 +46,9 @@ type Level struct {
 	graph[Vector]
 }
 
-func (l *Level) PopulateEnemies(g *Game) {
+func (l *Level) PopulateEnemies(g *Game, count int) {
 	for _, coords := range l.SpawnerCoordinates {
-		if len(l.Enemies) > 3 {
+		if len(l.Enemies) > count {
 			break
 		}
 		enemy := NewEnemy(float64(coords[0])+0.5, float64(coords[1])+0.5, g)
@@ -55,29 +56,30 @@ func (l *Level) PopulateEnemies(g *Game) {
 	}
 }
 
-func (l *Level) ActiveBodyPartLocation(g *Game) (float64, float64) {
-	if l.Head.Active && !l.Head.Assembled {
-		return Location(l.Head.X, l.Head.Y, g)
-	}
-	if l.Torso.Active && !l.Torso.Assembled {
-		return Location(l.Torso.X, l.Torso.Y, g)
-	}
-	if l.ArmRight.Active && !l.ArmRight.Assembled {
-		return Location(l.ArmRight.X, l.ArmRight.Y, g)
-	}
-	if l.ArmLeft.Active && !l.ArmLeft.Assembled {
-		return Location(l.ArmLeft.X, l.ArmLeft.Y, g)
-	}
-	if l.LegRight.Active && !l.LegRight.Assembled {
-		return Location(l.LegRight.X, l.LegRight.Y, g)
-	}
-	if l.LegLeft.Active && !l.LegLeft.Assembled {
-		return Location(l.LegLeft.X, l.LegLeft.Y, g)
-	}
-	return -1, -1
-}
+// func (l *Level) ActiveBodyPartLocation(g *Game) (float64, float64) {
+// 	if l.Head.Active && !l.Head.Assembled {
+// 		return Location(l.Head.X, l.Head.Y, g)
+// 	}
+// 	if l.Torso.Active && !l.Torso.Assembled {
+// 		return Location(l.Torso.X, l.Torso.Y, g)
+// 	}
+// 	if l.ArmRight.Active && !l.ArmRight.Assembled {
+// 		return Location(l.ArmRight.X, l.ArmRight.Y, g)
+// 	}
+// 	if l.ArmLeft.Active && !l.ArmLeft.Assembled {
+// 		return Location(l.ArmLeft.X, l.ArmLeft.Y, g)
+// 	}
+// 	if l.LegRight.Active && !l.LegRight.Assembled {
+// 		return Location(l.LegRight.X, l.LegRight.Y, g)
+// 	}
+// 	if l.LegLeft.Active && !l.LegLeft.Assembled {
+// 		return Location(l.LegLeft.X, l.LegLeft.Y, g)
+// 	}
+// 	return -1, -1
+// }
 
-func (l *Level) Load() error {
+func (l *Level) Load(levelCount int) error {
+	l.Count = levelCount
 	data, err := os.ReadFile(l.Filepath)
 	if err != nil {
 		return err
@@ -138,8 +140,10 @@ func (l *Level) SetActiveBodyPart(g *Game) {
 	if !l.LegLeft.SetActive(g) {
 		return
 	}
-	l.LegRight.SetActive(g)
-
+	if !l.LegRight.SetActive(g) {
+		return
+	}
+	g.LoadLevel(g.ActiveLevel.Count + 1)
 }
 
 func (l *Level) LoadParts(g *Game) {
