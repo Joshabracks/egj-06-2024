@@ -9,7 +9,7 @@ import (
 )
 
 type EnemyController struct {
-	Path astar.Path[Vector]
+	Path                 astar.Path[Vector]
 	Horizontal, Vertical float64
 	Character
 }
@@ -64,7 +64,6 @@ func NewEnemy(x, y float64, g *Game) *EnemyController {
 // 	ec.Character.Y = locY
 // }
 
-
 func (ec *EnemyController) Move(g *Game) {
 	targetX, targetY := Location(g.PlayerController.X, g.PlayerController.Y, g)
 	x, y := Location(ec.X, ec.Y, g)
@@ -91,9 +90,9 @@ func (ec *EnemyController) Move(g *Game) {
 			}
 			currentX += incr
 		}
-		if clearPath {
-			ec.Horizontal = float64(incr)
-		}
+		// if clearPath {
+		// 	ec.Horizontal = float64(incr)
+		// }
 	} else if targetY == y {
 		if targetY == y {
 			currentY := int(y)
@@ -115,47 +114,55 @@ func (ec *EnemyController) Move(g *Game) {
 				}
 				currentY += incr
 			}
-			if clearPath {
-				ec.Vertical = float64(incr)
-			}
+			// if clearPath {
+			// 	ec.Vertical = float64(incr)
+			// }
 		}
+	}
+	if clearPath {
+		xDiff := math.Abs(ec.X - g.PlayerController.X)
+		yDiff := math.Abs(ec.Y - g.PlayerController.Y)
+		distance := math.Sqrt(yDiff * yDiff + xDiff * xDiff)
+		normX := (ec.X - g.PlayerController.X) / distance
+		normY := (ec.Y - g.PlayerController.Y) / distance
+		ec.X = ec.X - (normX * ec.Speed)
+		ec.Y = ec.Y - (normY * ec.Speed)
+		return
 	}
 	if ec.Horizontal == 0 && ec.Vertical == 0 {
 		ec.Horizontal = 1
 		return
 	}
-	if !clearPath {
-		nextX := ec.X + ec.Horizontal
-		nextY := ec.Y + ec.Vertical
-		if nextX < 0 || nextX >= float64(g.ActiveLevel.width) {
-			ec.Horizontal *= -1
-			return
-		}
-		if nextY < 0 || nextY >= float64(g.ActiveLevel.height) {
-			nextY *= -1
-			return
-		}
-		nextTile := g.ActiveLevel.Map[int(nextX)][int(nextY)]
-		if nextTile == TILE_WALL {
-			r := time.Now().UnixMilli() % 4
-			switch(r){
-			case 0:
-				ec.Horizontal = 1
-				ec.Vertical = 0
-			case 1:
-				ec.Horizontal = -1
-				ec.Vertical = 0
-			case 2:
-				ec.Horizontal = 0
-				ec.Vertical = 1
-			case 3:
-				ec.Horizontal = 0
-				ec.Vertical = -1
-			}
-			return
-		}
+	nextX := ec.X + ec.Horizontal
+	nextY := ec.Y + ec.Vertical
+	if nextX < 0 || nextX >= float64(g.ActiveLevel.width) {
+		ec.Horizontal *= -1
+		return
 	}
-	
+	if nextY < 0 || nextY >= float64(g.ActiveLevel.height) {
+		nextY *= -1
+		return
+	}
+	nextTile := g.ActiveLevel.Map[int(nextX)][int(nextY)]
+	if nextTile == TILE_WALL {
+		r := time.Now().UnixMilli() % 4
+		switch r {
+		case 0:
+			ec.Horizontal = 1
+			ec.Vertical = 0
+		case 1:
+			ec.Horizontal = -1
+			ec.Vertical = 0
+		case 2:
+			ec.Horizontal = 0
+			ec.Vertical = 1
+		case 3:
+			ec.Horizontal = 0
+			ec.Vertical = -1
+		}
+		return
+	}
+
 	speed := ec.Speed
 	if ec.Boost && ec.Stamina > 0 {
 		speed *= 2
